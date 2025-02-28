@@ -1,0 +1,22 @@
+{
+  "adns_roots": [
+    {
+      "name": "attested.name",
+      "trust_anchor": "AwEAAbOz2VLuTIMQ2rvKCJUd0fK94d5hWnILY5u+dQP1Z9EXO7M1vWubZEsYTI03GPogZR9/qjE2+QZxa9GAo1jNkiaKjzeEHZdlpGaQ+Q7DkNYeOK4LJp/+i3FVkR9zT6wveSbwdm/zUIuZ3EXf+d1T8omUCvN3hHRfwz+lUOmJL/2LFG4F9EZtYs/HyRKK7OZkBuC76+QQX/X5HgqKTLljf9KjBMTVWwC9/J0cy59nbmLOK98rQflm5dVTLH9q/lViBW8LiZ9oDejbCGplr6vt1YPRC/6MEcZfqKpLdJFwPVCH+5fHsIp4hdKgG6X3/TnHYYVwZpkRJ0l6luMNtFs79kU=",
+      "key_tag": 19036,
+      "algorithm": 8
+    },
+    {
+      "name": "conf",
+      "trust_anchor": "AwEAAZ+8SgMyxZTkHUiOUEpeK+EsiRj9oVGGY/oKQcTy0FbYlRgXr5BOaU/MpLRduHeAQkCRVEDVptHLG10/PtgBLJ+N6wQGq80QdQjTQiQL/bfTpTHw+l8iVR57Mz5q8QNQaXH+8QKnmZ8Htx+2qXzx2jvXef0QJxeVYLzyZVEoMNdQfdpD7MXMPEsG7jDxhw3na3ZGUKapuqCE4HSTZ8C9sQf3ZgCKJHQPtbxlDQ8GZ2MGlCqZG/LWJ5oYgG76do/T0v62xTx6Klke0M0napfFQLzY8dZoAyI5G1RUFVXJJ5lvTziDNisJc2kErMnXcRLkPJxT73zuroSJhNN7fjPh0hLELx0=",
+      "key_tag": 20326,
+      "algorithm": 8
+    }
+  ],
+  "bind_address": "127.0.0.1",
+  "port": 8053,
+  "cert_file": "server.crt",
+  "key_file": "server.key",
+  "timeout_seconds": 5,
+  "max_concurrent_requests": 100
+}

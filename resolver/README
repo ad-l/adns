@@ -1,0 +1,158 @@
+# Attested DNS Resolver
+
+A DNS over HTTPS (DoH) resolver that provides DNSSEC validation and attestation verification for domains under configured Attested DNS roots.
+
+## Overview
+
+This resolver extends standard DNS functionality by adding:
+
+1. **DNSSEC validation** for domains under configured aDNS roots
+2. **Attestation verification** to ensure services are running in proper trusted execution environments (TEEs)
+3. **DNS over HTTPS (DoH)** support for secure query transport
+
+The resolver is designed to act as a bridge between clients and Attested DNS infrastructure, ensuring that only properly attested services are accessible.
+
+## Features
+
+- **Domain-specific DNSSEC validation** - Validates DNSSEC for domains under configured aDNS roots without relying on the AD bit from upstream resolvers
+- **Attestation verification** - Fetches and validates attestation records for services
+- **Policy enforcement** - Checks service policies against attestation records
+- **DNS over HTTPS** - Provides a secure interface for client queries
+- **Configurable trust anchors** - Supports multiple aDNS roots with pinned DNSSEC KSKs
+- **Recursive validation** - Performs recursive DNSSEC validation until a trusted root is reached
+
+## Requirements
+
+- Rust 1.70.0 or newer
+- OpenSSL development libraries (for TLS support)
+- A TLS certificate and key (for HTTPS)
+
+## Installation
+
+### Building from source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ad-l/adns
+   cd resolver
+   ```
+
+2. Build the resolver:
+   ```bash
+   cargo build --release
+   ```
+
+3. The compiled binary will be in `target/release/adns-resolver`.
+
+### Configuration
+
+Create a configuration file (`config.json`) with your aDNS roots and settings:
+
+```json
+{
+  "adns_roots": [
+    {
+      "name": "attested.name",
+      "trust_anchor": "AwEAAbOz2VLuTIMQ2rvKCJUd0fK94d5hWnILY5u+dQP1Z9EXO7M1vWubZEsYTI03GPogZR9/qjE2+QZxa9GAo1jNkiaKjzeEHZdlpGaQ+Q7DkNYeOK4LJp/+i3FVkR9zT6wveSbwdm/zUIuZ3EXf+d1T8omUCvN3hHRfwz+lUOmJL/2LFG4F9EZtYs/HyRKK7OZkBuC76+QQX/X5HgqKTLljf9KjBMTVWwC9/J0cy59nbmLOK98rQflm5dVTLH9q/lViBW8LiZ9oDejbCGplr6vt1YPRC/6MEcZfqKpLdJFwPVCH+5fHsIp4hdKgG6X3/TnHYYVwZpkRJ0l6luMNtFs79kU=",
+      "key_tag": 19036, 
+      "algorithm": 8
+    },
+    {
+      "name": "conf",
+      "trust_anchor": "AwEAAZ+8SgMyxZTkHUiOUEpeK+EsiRj9oVGGY/oKQcTy0FbYlRgXr5BOaU/MpLRduHeAQkCRVEDVptHLG10/PtgBLJ+N6wQGq80QdQjTQiQL/bfTpTHw+l8iVR57Mz5q8QNQaXH+8QKnmZ8Htx+2qXzx2jvXef0QJxeVYLzyZVEoMNdQfdpD7MXMPEsG7jDxhw3na3ZGUKapuqCE4HSTZ8C9sQf3ZgCKJHQPtbxlDQ8GZ2MGlCqZG/LWJ5oYgG76do/T0v62xTx6Klke0M0napfFQLzY8dZoAyI5G1RUFVXJJ5lvTziDNisJc2kErMnXcRLkPJxT73zuroSJhNN7fjPh0hLELx0=",
+      "key_tag": 20326,
+      "algorithm": 8
+    }
+  ],
+  "bind_address": "127.0.0.1",
+  "port": 8053,
+  "cert_file": "server.crt",
+  "key_file": "server.key",
+  "timeout_seconds": 5,
+  "max_concurrent_requests": 100
+}
+```
+
+### Configuration Options
+
+| Option | Description |
+|--------|-------------|
+| `adns_roots` | List of aDNS roots with their DNSSEC trust anchors |
+| `bind_address` | IP address to bind the DoH server to |
+| `port` | Port to listen on |
+| `cert_file` | Path to TLS certificate file |
+| `key_file` | Path to TLS private key file |
+| `timeout_seconds` | Timeout for DNS queries in seconds |
+| `max_concurrent_requests` | Maximum number of concurrent requests |
+
+Each aDNS root in the configuration needs:
+- `name`: Domain name of the aDNS root
+- `trust_anchor`: Base64-encoded DNSSEC trust anchor (KSK)
+- `key_tag`: Key tag for the trust anchor
+- `algorithm`: DNSSEC algorithm number
+
+## Running the Resolver
+
+```bash
+RUST_LOG=info ./adns-resolver config.json
+```
+
+You can set different log levels using the `RUST_LOG` environment variable: `error`, `warn`, `info`, `debug`, or `trace`.
+
+## Using the Resolver
+
+### Browser Setup
+
+Modern browsers support DNS over HTTPS. Configure your browser to use the resolver:
+
+**Firefox:**
+1. Go to Settings
+2. Scroll down to Network Settings
+3. Click "Settings"
+4. Check "Enable DNS over HTTPS"
+5. Select "Custom" and enter `https://your-server:8053/dns-query`
+
+**Chrome:**
+1. Go to Settings > Privacy and security > Security
+2. Enable "Use secure DNS"
+3. Select "Custom" and enter `https://your-server:8053/dns-query`
+
+### Testing
+
+You can test the resolver with `curl`:
+
+```bash
+# JSON format
+curl -H 'accept: application/dns-json' 'https://localhost:8053/dns-query?name=example.attested.name&type=A'
+
+# Wire format
+curl -H 'content-type: application/dns-message' --data-binary '@dns_query.bin' https://localhost:8053/dns-query
+```
+
+## How It Works
+
+When a DNS query is received by the resolver, it follows these steps:
+
+1. The resolver checks if the queried domain is under one of the configured aDNS roots.
+
+2. If the domain is under an aDNS root, the resolver:
+   - Performs DNSSEC validation from the root down to the queried domain
+   - Verifies that the chain of trust is intact and matches the configured trust anchor
+   - Fetches the attestation record (`_attest.<domain>`) if it exists
+   - Fetches the policy (`_policy.<domain>`) if it exists
+   - Validates the attestation against the policy
+   - Only if all validation passes, returns the requested DNS records
+
+3. If the domain is not under an aDNS root, the resolver forwards the query to the system's resolver and returns the results without additional validation.
+
+The resolver uses the upstream DNS servers configured in your system, but does not rely on them for DNSSEC validation. Instead, it performs its own validation for domains under aDNS roots.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+
